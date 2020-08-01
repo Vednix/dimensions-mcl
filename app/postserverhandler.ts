@@ -66,7 +66,7 @@ class PriorServerHandler extends TerrariaServerPacketHandler {
                 this.handleSendSection(server, packet);
                 break;
             case PacketTypes.SendTileSquare:
-                this.handleSendTileSquare(server, packet);
+                this.handleSendTileSquare(server, packet); 
                 break;
             case PacketTypes.NPCUpdate:
                 this.handleNpcUpdate(server, packet);
@@ -109,21 +109,22 @@ class PriorServerHandler extends TerrariaServerPacketHandler {
             case PacketTypes.PlayerHP:
             case PacketTypes.TogglePVP:
             case PacketTypes.PlayerItemAnimation:
-                this.handlePlayerPacket(server, packet);
-                break;
-
-            case PacketTypes.HealEffect:
             case PacketTypes.PlayerMana:
-            case PacketTypes.ManaEffect:
             case PacketTypes.PlayerTeam:
+            case PacketTypes.HealEffect:
+            case PacketTypes.ManaEffect:
             case PacketTypes.UpdatePlayerBuff:
-            case PacketTypes.SpecialNPCEffect:
-            case PacketTypes.PlayMusicItem:
             case PacketTypes.PlayerDodge:
             case PacketTypes.HealOtherPlayer:
             case PacketTypes.PlayerTeleportThroughPortal:
+                this.handlePlayerPacket(server, packet);
+                break;
+
+            case PacketTypes.SpecialNPCEffect:
+            case PacketTypes.PlayMusicItem:
             case PacketTypes.UpdateMinionTarget:
             case PacketTypes.NebulaLevelUpRequest:
+                break;
             case PacketTypes.MinionAttackTargetUpdate:
                 packet.data = Buffer.allocUnsafe(0);
                 break;
@@ -310,7 +311,6 @@ class PriorServerHandler extends TerrariaServerPacketHandler {
         const tileY = reader.readInt32();
         const width = reader.readInt16();
         const height = reader.readInt16();
-
         let copies = 0;
         for (let i = 0; i < height; i++) {
             for (let j = 0; j < width; j++) {
@@ -413,10 +413,15 @@ class PriorServerHandler extends TerrariaServerPacketHandler {
         const num23 = (num21 & 32768) > 0 ? 1 : 0;
 
         // No compatible way to change it
+            //console.log("num21 =>", num21);
+            //console.log("num22 =>", num22);
+            //console.log("num23 =>", num23);
+            //console.log("-----------------");
         if (num23) {
             packet.data = Buffer.allocUnsafe(0);
         } else {
-            packet.data = Buffer.allocUnsafe(0);
+            if (num21 != 4)
+                packet.data = Buffer.allocUnsafe(0);
         }
 
         return false;
@@ -554,7 +559,7 @@ class PriorServerHandler extends TerrariaServerPacketHandler {
                 .packByte(hitDirection)
                 .packInt16(damage)
                 .packByte(flags)
-                .packString(deathReason.deathReason)
+                .packString("teste " + deathReason.deathReason)
                 .data;
         }
 
@@ -697,11 +702,15 @@ class PriorServerHandler extends TerrariaServerPacketHandler {
         const playerId = reader.readByte();
         const realId = this._mcl.realId.get(server.client);
 
+        
         if (playerIdNotMobileCompatible(playerId, realId)) {
             packet.data = Buffer.allocUnsafe(0);
-        } else if (shouldFakeId(playerId, realId)) {
+        }
+        else if (shouldFakeId(playerId, realId)) {
             packet.data.writeUInt8(FAKED_CLIENT_ID, PACKET_HEADER_BYTES + 2);
-        } else if (playerId === PC_SERVER_ID) {
+        }
+        else if (playerId === PC_SERVER_ID) {
+            //packet.data.writeUInt8(PC_SERVER_ID, PACKET_HEADER_BYTES + 2);
             packet.data.writeUInt8(MOBILE_SERVER_ID, PACKET_HEADER_BYTES + 2);
         }
     }
@@ -725,7 +734,8 @@ class PriorServerHandler extends TerrariaServerPacketHandler {
         server.socket.write(new PacketWriter()
             .setType(PacketTypes.UpdateItemOwner)
             .packInt16(400)
-            .packByte(255)
+            .packByte(16) //[Vednix Note] If using my custom TShock, 16 will be ok, otherwise change back to 255
+            //.packByte(255)
             .data
         );
 

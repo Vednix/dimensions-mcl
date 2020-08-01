@@ -49,6 +49,14 @@ class PriorClientHandler extends ClientPacketHandler {
             case PacketTypes.UpdateItemOwner:
                 this.handleUpdateItemOwner(client, packet);
                 break;
+                case PacketTypes.ModifyTile:
+                    //console.log("modifytile reached [postserverhandler]");
+                    break;
+                case PacketTypes.SetLiquid:
+                    //console.log("SetLiquid Packet Received");
+                    break;
+                    default:
+                       // console.log("PacketType not assigned =>", packet.packetType);
         }
         return handled;
     }
@@ -59,7 +67,7 @@ class PriorClientHandler extends ClientPacketHandler {
         const owner = reader.readByte();
 
         if (owner === MOBILE_SERVER_ID) {
-            packet.data.writeUInt8(PC_SERVER_ID, 2);
+            //packet.data.writeUInt8(PC_SERVER_ID, 2);
         }
     }
 
