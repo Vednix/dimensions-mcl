@@ -117,13 +117,11 @@ class PriorServerHandler extends TerrariaServerPacketHandler {
             case PacketTypes.PlayerDodge:
             case PacketTypes.HealOtherPlayer:
             case PacketTypes.PlayerTeleportThroughPortal:
-                this.handlePlayerPacket(server, packet);
-                break;
-
             case PacketTypes.SpecialNPCEffect:
             case PacketTypes.PlayMusicItem:
             case PacketTypes.UpdateMinionTarget:
             case PacketTypes.NebulaLevelUpRequest:
+                this.handlePlayerPacket(server, packet);
                 break;
             case PacketTypes.MinionAttackTargetUpdate:
                 packet.data = Buffer.allocUnsafe(0);
@@ -269,33 +267,93 @@ class PriorServerHandler extends TerrariaServerPacketHandler {
         const reader = new PacketReader(packet.data);
         const statusMax = reader.readInt32();
         const netText = reader.readNetworkText();
-        packet.data = new PacketWriter()
-            .setType(PacketTypes.Status)
-            .packInt32(statusMax)
-            .packString(netText.text)
-            .data;
+        let text = this.handleLegacyMessage(netText);
+        if (text !== "unhandled")
+            packet.data = new PacketWriter()
+                .setType(PacketTypes.Status)
+                .packInt32(statusMax)
+                .packString(text)
+                .data;
         return false;
+    }
+    
+    private handleLegacyMessage(netText: any): string {
+        let StatusText;
+        if (netText.text.startsWith("Death"))
+            StatusText = "unhandled";
+        else
+            switch (netText.text){
+                case "LegacyInterface.44":
+                    StatusText = "Loading Map";
+                    break;
+                case "":
+                case "LegacyMisc.32":
+                    StatusText = "The jungle grows restless...";
+                break;
+                case "LegacyMisc.15":
+                    StatusText = "The ancient spirits of light and dark have been released.";
+                break;
+                case "LegacyMisc.43":
+                    StatusText = "Celestial criatures are invading!";
+                break;
+                case "LegacyMisc.44":
+                    StatusText = "Your mind goes numb...";
+                break;
+                case "LegacyMisc.45":
+                    StatusText = "You are overwhelmed with your pain...";
+                break;
+                case "LegacyMisc.46":
+                    StatusText = "Otherworldly voices linger around you...";
+                break;
+                case "LegacyMisc.52":
+                    StatusText = "Impeding doom approaches...";
+                break;
+                case "LegacyMultiplayer.11":
+                case "LegacyMultiplayer.12":
+                case "LegacyMultiplayer.13":
+                case "LegacyMultiplayer.14":
+                case "LegacyMultiplayer.15":
+                case "LegacyMultiplayer.16":
+                case "LegacyMultiplayer.17":
+                case "LegacyMultiplayer.22":
+                case "Announcement.HasAwoken":
+                case "Announcement.HasBeenDefeated_Single":
+                case "LegacyMultiplayer.20":
+                case "LegacyMultiplayer.21":
+                    StatusText = "unhandled"; //Better to use TShock to handle this
+                break;
+                default:
+                    StatusText = netText.text;
+                break;
+            }
+        return StatusText;
     }
 
     private handleLoadNetModule(server: TerrariaServer, packet: Packet): boolean {
         const reader = new PacketReader(packet.data);
         const moduleId = reader.readUInt16();
+        //0 = LiquidModule
+        //1 = ChatTextModule
         if (moduleId === 1) {
             reader.readByte();
             const netText = reader.readNetworkText();
             const color = reader.readColor();
+            //console.log(netText);
+            
+        let text = this.handleLegacyMessage(netText);
+        if (text !== "unhandled")
             packet.data = new PacketWriter()
                 .setType(PacketTypes.ChatMessage)
                 .packByte(PC_SERVER_ID)
                 .packByte(color.R)
                 .packByte(color.G)
                 .packByte(color.B)
-                .packString(netText.text)
+                .packString(text)
                 .data;
             if (server.client.state !== ClientState.FullyConnected) {
                 packet.data = Buffer.allocUnsafe(0);
             }
-        } else {
+        } else if (moduleId !== 0) {
             packet.data = Buffer.allocUnsafe(0);
         }
 
@@ -408,21 +466,27 @@ class PriorServerHandler extends TerrariaServerPacketHandler {
 
     private handleSendTileSquare(server: TerrariaServer, packet: Packet): boolean {
         const reader = new PacketReader(packet.data);
-        const num21 = reader.readUInt16();
-        const num22 = (num21 & 32767);
-        const num23 = (num21 & 32768) > 0 ? 1 : 0;
+        const Size = reader.readUInt16();
+        const TileChangeType = reader.readByte();
+        const x = reader.readUInt16();
+        const y = reader.readUInt16();
+        const num22 = (Size & 32767);
+        const num23 = (Size & 32768) > 0 ? true : false;
+
+        let SafeSize: number[] = [1, 4, 32]; //Only tested and trouble-free IDs
+
+        //32771
+        //console.log("Size =>", Size);
+        //console.log("TileChangeType =>", TileChangeType);
+        //console.log("x =>", x);
+        //console.log("y =>", y);
+        //console.log("num22 =>", num22);
+        //console.log("num23 =>", num23);
+        //console.log("-----------------");
 
         // No compatible way to change it
-            //console.log("num21 =>", num21);
-            //console.log("num22 =>", num22);
-            //console.log("num23 =>", num23);
-            //console.log("-----------------");
-        if (num23) {
+        if (!SafeSize.includes(Size) || num23)
             packet.data = Buffer.allocUnsafe(0);
-        } else {
-            if (num21 != 4)
-                packet.data = Buffer.allocUnsafe(0);
-        }
 
         return false;
     }
@@ -720,6 +784,7 @@ class PriorServerHandler extends TerrariaServerPacketHandler {
         const playerId = reader.readByte();
         const realId = this._mcl.realId.get(server.client);
         if (playerIdNotMobileCompatible(playerId, realId)) {
+            console.log("not mobile");
             packet.data = Buffer.allocUnsafe(0);
         } else if (shouldFakeId(playerId, realId)) {
             packet.data.writeUInt8(FAKED_CLIENT_ID, PACKET_HEADER_BYTES);

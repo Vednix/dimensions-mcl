@@ -49,14 +49,9 @@ class PriorClientHandler extends ClientPacketHandler {
             case PacketTypes.UpdateItemOwner:
                 this.handleUpdateItemOwner(client, packet);
                 break;
-                case PacketTypes.ModifyTile:
-                    //console.log("modifytile reached [postserverhandler]");
-                    break;
-                case PacketTypes.SetLiquid:
-                    //console.log("SetLiquid Packet Received");
-                    break;
-                    default:
-                       // console.log("PacketType not assigned =>", packet.packetType);
+            default:
+                //console.log("PacketType not assigned =>", packet.packetType);
+            break;
         }
         return handled;
     }
