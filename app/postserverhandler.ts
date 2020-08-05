@@ -474,6 +474,7 @@ class PriorServerHandler extends TerrariaServerPacketHandler {
         const num23 = (Size & 32768) > 0 ? true : false;
 
         let SafeSize: number[] = [1, 4, 32]; //Only tested and trouble-free IDs
+        let UnsafeSize: number[] = [3]; //Only IDs with potential crash chance
 
         //32771
         //console.log("Size =>", Size);
@@ -485,7 +486,7 @@ class PriorServerHandler extends TerrariaServerPacketHandler {
         //console.log("-----------------");
 
         // No compatible way to change it
-        if (!SafeSize.includes(Size) || num23)
+        if (UnsafeSize.includes(Size) || num23)
             packet.data = Buffer.allocUnsafe(0);
 
         return false;
