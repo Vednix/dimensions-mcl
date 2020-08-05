@@ -1,4 +1,14 @@
 # Dimensions Mobile Compatibility Layer (Dimensions MCL)
+
+## Know Bugs (✔ Fixed / ❕ Needs Revision / ❌ Hasn't been fixed yet)
+- Protected tiles are not reversing after being changed. [✔]
+- The liquids and blocks of sand are not falling. [✔]
+- Mobile client crashing caused by SendTileSquare packet. [❕]
+- Liquids are not merging. [❌]
+	> I still couldn't solve this error directly in the extension, so i made partially fix using a TShock plugin [dimensions-mcl.forceliquidmerge](https://github.com/Vednix/dimensions-mcl.forceliquidmerge).
+- Some legacy game messages. [❌]
+	> I'll fix this using a TShock plugin, to make it easier to edit messages.
+
 ## Current State
 Currently it's not complete. There are still issues to fix, some of which require a decision to be made on what the appropriate substitute functionality is.
 
